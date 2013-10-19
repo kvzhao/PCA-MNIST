@@ -79,10 +79,8 @@ int main()
     // Holds some images:
     vector<Mat> db;
 
-    const int component_num = 10;    // images in data set
-    //const int vector_num = 28 * 28; // image dimension
-    //Mat mPCA_set(component_num, vector_num, CV_8U);
-    //cout << "Allocate a PCA matrix saving data set\n";
+    const int component_num = 1000;    // images in data set
+
 #if DEBUG
     //cout << "Dim ( " << mPCA_set.cols << "," << mPCA_set.rows << " )" << endl;
 #endif
@@ -97,7 +95,7 @@ int main()
 
     /* Build a matrix with the observations in row:*/
     Mat data = asRowMatrix(db, CV_8U);
-    cout << "All images save in the PCA matrix\n";
+    cout << "All images save in the data vector.\n";
 
     PCA pca(data, Mat(), CV_PCA_DATA_AS_ROW, component_num);
 
@@ -105,6 +103,7 @@ int main()
     Mat mean = pca.mean.clone();
     Mat eigenvalues = pca.eigenvalues.clone();
     Mat eigenvectors = pca.eigenvectors.clone();
+    cout << "Solve PCA results ( Eigenvalues and Eigenvectors )\n";
     // The mean face:
     imshow("avg", norm_0_255(mean.reshape(1, db[0].rows)));
 
