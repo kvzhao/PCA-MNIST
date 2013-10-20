@@ -146,6 +146,7 @@ int main(int agrc, char** argv)
 
     /* Build a matrix with the observations in row:*/
 //    Mat data = asRowMatrix(db, CV_8U);
+    imshow("Data read from DataSet",db.at(0));
     Mat data = formatImagesForPCA(db);
     cout << "All images save in the data row vector.\n";
 
@@ -175,6 +176,7 @@ int main(int agrc, char** argv)
     }
 
 
+    imshow("raw data",data);
     Mat point = pca.project(data.row(0));
     Mat reconsArr = pca.backProject(point);
 
@@ -189,7 +191,7 @@ int main(int agrc, char** argv)
     }
 
     Mat bpImage(28,28,CV_8U);
-    cout << "Dim of Back-projected mat is (" << bpImage.rows << "," << bpImage.cols << endl;
+    cout << "Dim of Back-projected mat is (" << bpImage.rows << "," << bpImage.cols << ")" << endl;
 
     pData = ((unsigned char*)bpImage.data);
     for ( int r=0; r < 28; r++ ) {
