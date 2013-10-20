@@ -112,14 +112,21 @@ int main(int agrc, char** argv)
 
     // Holds some images:
     vector<Mat> db;
-    int component_num ;
+    int component_num, reduced_dim;
     if ( !argv[1] ) {
-
         component_num = 1000 ;    // whole data set
     } else
     {
         component_num = atoi(argv[1]);    // images in data set
     }
+
+    if ( !argv[2] ) {
+        reduced_dim = 2;
+    } else
+    {
+        reduced_dim = atoi(argv[2]);
+    }
+
 #if DEBUG
     //cout << "Dim ( " << mPCA_set.cols << "," << mPCA_set.rows << " )" << endl;
 #endif
@@ -136,25 +143,64 @@ int main(int agrc, char** argv)
         cerr << "Error opening file." << "\". Reason: " << e.msg << endl;
         exit(1);
     }
+
     /* Build a matrix with the observations in row:*/
 //    Mat data = asRowMatrix(db, CV_8U);
     Mat data = formatImagesForPCA(db);
     cout << "All images save in the data row vector.\n";
 
-    PCA pca(data, Mat(), CV_PCA_DATA_AS_ROW, component_num);
+    PCA pca(data, Mat(), CV_PCA_DATA_AS_ROW, reduced_dim);
 
     // And copy the PCA results:
     Mat mean = pca.mean.clone();
     Mat eigenvalues = pca.eigenvalues.clone();
     Mat eigenvectors = pca.eigenvectors.clone();
-    cout << "Solve PCA results ( Eigenvalues and Eigenvectors )\n";
+    cout << "Find PCA results ( Eigenvalues and Eigenvectors )\n";
 
     /* Display the result */
-    cout << "The dim of eigenvectors are (" << eigenvectors.rows << "," << eigenvectors.cols << ")--> \n";
-    /*
+    cout << "The dim of eigenvectors are (" << eigenvectors.rows << "," << eigenvectors.cols << ") \n";
+
+    /* Projection and Back-projection */
+    for ( int i=0; i < component_num; i++ ) {
+    Mat point = pca.project(data.row(i));
+    Mat reconstruction = pca.backProject(point);
+
+    cout << "The dim of first row is  (" << data.row(i).rows << "," << data.row(i).cols << ")--> ";
+    cout << data.row(i).at<float>(0,0) << endl ;
+    cout << "The dim of point mat is  (" << point.rows << "," << point.cols << ")--> ";
+    cout << point << endl;
+
+    //cout << reconstruction << endl;
+//    cout << "The dim of reconstruction mat is  (" << reconstruction.rows << "," << reconstruction.cols << ")\n";
+    }
+
+
+    Mat point = pca.project(data.row(0));
+    Mat reconsArr = pca.backProject(point);
+
+//    Mat recons_image(28,28);
+    unsigned char rdata[28][28];
+
+    unsigned char* pData = ((unsigned char*)reconsArr.data);
+    for ( int r=0; r < 28; r++ ) {
+        for (int c=0; c < 28; c++) {
+            rdata[r][c] = *(pData);
+            pData++;
+        }
+    }
+
+    IplImage *imghead=cvCreateImageHeader(cvSize(28,28), IPL_DEPTH_8U, 1);
+    cvSetData(imghead, rdata, 28);
+
+            //(recons_image.data)[r*28 +c] = reconsArr[r*28+c];
+
+    recons_image( rdata);
+
+    string winName = "PCA";
+    imshow(winName, recons_image);
     int key = 0;
     while(key != 'q')
         key = waitKey();
-    */
     return 0;
 }
+
