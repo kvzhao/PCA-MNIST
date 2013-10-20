@@ -88,25 +88,6 @@ struct params
     string winName;
 };
 
-static void onTrackbar(int pos, void* ptr)
-{
-    cout << "Retained Variance = " << pos << "%   ";
-    cout << "re-calculating PCA..." << std::flush;
-
-    double var = pos / 100.0;
-
-    struct params *p = (struct params *)ptr;
-
-    p->pca = PCA(p->data, cv::Mat(), CV_PCA_DATA_AS_ROW, var);
-
-    Mat point = p->pca.project(p->data.row(0));
-    Mat reconstruction = p->pca.backProject(point);
-    reconstruction = reconstruction.reshape(p->ch, p->rows);
-    reconstruction = toGrayscale(reconstruction);
-
-    imshow(p->winName, reconstruction);
-    cout << "done!   # of principal components: " << p->pca.eigenvectors.rows << endl;
-}
 
 static  Mat formatImagesForPCA(const vector<Mat> &data)
 {
