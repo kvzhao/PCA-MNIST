@@ -189,15 +189,27 @@ int main(int agrc, char** argv)
         }
     }
 
+//    reconsArr.reshape(28,28);
+    Mat bpImage(28,28,CV_8U);
+    cout << "Dim of Back-projected mat is (" << bpImage.rows << "," << bpImage.cols << endl;
+
+    pData = ((unsigned char*)bpImage.data);
+    for ( int r=0; r < 28; r++ ) {
+        for (int c=0; c < 28; c++) {
+            *pData = rdata[r][c];
+            pData++;
+        }
+    }
+
     IplImage *imghead=cvCreateImageHeader(cvSize(28,28), IPL_DEPTH_8U, 1);
     cvSetData(imghead, rdata, 28);
 
             //(recons_image.data)[r*28 +c] = reconsArr[r*28+c];
 
-    recons_image( rdata);
+//    recons_image(rdata);
 
     string winName = "PCA";
-    imshow(winName, recons_image);
+    imshow(winName, bpImage);
     int key = 0;
     while(key != 'q')
         key = waitKey();
