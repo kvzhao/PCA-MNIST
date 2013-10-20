@@ -120,17 +120,6 @@ static  Mat formatImagesForPCA(const vector<Mat> &data)
     return dst;
 }
 
-void print_matrix( Mat &m )
-{
-    for (int r=0; r < m.rows ; r++ )
-    {
-        for (int c=0; c < m.cols; c++ )
-        {
-            cout << m.col(c).row(r) ;
-        }
-    }
-
-}
 
 int main(int agrc, char** argv)
 {
