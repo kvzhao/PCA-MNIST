@@ -178,7 +178,6 @@ int main(int agrc, char** argv)
     Mat point = pca.project(data.row(0));
     Mat reconsArr = pca.backProject(point);
 
-//    Mat recons_image(28,28);
     unsigned char rdata[28][28];
 
     unsigned char* pData = ((unsigned char*)reconsArr.data);
@@ -189,7 +188,6 @@ int main(int agrc, char** argv)
         }
     }
 
-//    reconsArr.reshape(28,28);
     Mat bpImage(28,28,CV_8U);
     cout << "Dim of Back-projected mat is (" << bpImage.rows << "," << bpImage.cols << endl;
 
@@ -200,13 +198,6 @@ int main(int agrc, char** argv)
             pData++;
         }
     }
-
-    IplImage *imghead=cvCreateImageHeader(cvSize(28,28), IPL_DEPTH_8U, 1);
-    cvSetData(imghead, rdata, 28);
-
-            //(recons_image.data)[r*28 +c] = reconsArr[r*28+c];
-
-//    recons_image(rdata);
 
     string winName = "PCA";
     imshow(winName, bpImage);
