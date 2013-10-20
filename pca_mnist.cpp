@@ -120,7 +120,19 @@ static  Mat formatImagesForPCA(const vector<Mat> &data)
     return dst;
 }
 
-int main()
+void print_matrix( Mat &m )
+{
+    for (int r=0; r < m.rows ; r++ )
+    {
+        for (int c=0; c < m.cols; c++ )
+        {
+            cout << m.col(c).row(r) ;
+        }
+    }
+
+}
+
+int main(int agrc, char** argv)
 {
     string prefix = "DataSet/";
 #if GENERATE_IMAGE
@@ -130,9 +142,14 @@ int main()
 
     // Holds some images:
     vector<Mat> db;
+    int component_num ;
+    if ( !argv[1] ) {
 
-    const int component_num = 1000;    // images in data set
-
+        component_num = 1000 ;    // whole data set
+    } else
+    {
+        component_num = atoi(argv[1]);    // images in data set
+    }
 #if DEBUG
     //cout << "Dim ( " << mPCA_set.cols << "," << mPCA_set.rows << " )" << endl;
 #endif
@@ -146,54 +163,28 @@ int main()
 #endif
             }
     } catch (cv::Exception& e) {
-        cerr << "Error opening file \"" << "\". Reason: " << e.msg << endl;
+        cerr << "Error opening file." << "\". Reason: " << e.msg << endl;
         exit(1);
     }
     /* Build a matrix with the observations in row:*/
 //    Mat data = asRowMatrix(db, CV_8U);
     Mat data = formatImagesForPCA(db);
-    cout << "All images save in the data vector.\n";
+    cout << "All images save in the data row vector.\n";
 
-    PCA pca(data, Mat(), CV_PCA_DATA_AS_ROW, component_num );
+    PCA pca(data, Mat(), CV_PCA_DATA_AS_ROW, component_num);
 
     // And copy the PCA results:
     Mat mean = pca.mean.clone();
     Mat eigenvalues = pca.eigenvalues.clone();
     Mat eigenvectors = pca.eigenvectors.clone();
     cout << "Solve PCA results ( Eigenvalues and Eigenvectors )\n";
-    // The mean face:
-    imshow("avg", norm_0_255(mean.reshape(1, db[0].rows)));
 
-    // The first three eigenfaces:
-    imshow("pc1", norm_0_255(pca.eigenvectors.row(0)).reshape(1, db[0].rows));
-    imshow("pc2", norm_0_255(pca.eigenvectors.row(1)).reshape(1, db[0].rows));
-    imshow("pc3", norm_0_255(pca.eigenvectors.row(2)).reshape(1, db[0].rows));
-
-    // Demonstration of the effect of retainedVariance on the first image
-    Mat point = pca.project(data.row(0)); // project into the eigenspace, thus the image becomes a "point"
-    Mat reconstruction = pca.backProject(point); // re-create the image from the "point"
-    reconstruction = reconstruction.reshape(db[0].channels(), db[0].rows); // reshape from a row vector into image shape
-    reconstruction = toGrayscale(reconstruction); // re-scale for displaying
-
-    // display until user presses q
-    string winName = "Reconstruction | press 'q' to quit";
-    imshow(winName, reconstruction);
-
-    // params struct to pass to the trackbar handler
-    params p;
-    p.data = data;
-    p.ch = db[0].channels();
-    p.rows = db[0].rows;
-    p.pca = pca;
-    p.winName = winName;
-
-    // create the tracbar
-    int pos = 95;
-    createTrackbar("Retained Variance (%)", winName, &pos, 100, onTrackbar, (void*)&p);
-
-
+    /* Display the result */
+    cout << "The dim of eigenvectors are (" << eigenvectors.rows << "," << eigenvectors.cols << ")--> \n";
+    /*
     int key = 0;
     while(key != 'q')
         key = waitKey();
+    */
     return 0;
 }
