@@ -5,6 +5,7 @@
 /* System file and IO */
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 /* */
@@ -33,6 +34,16 @@ Mat norm_0_255(const Mat& src) {
     }
     return dst;
 }
+
+static Mat toGrayscale(InputArray _src) {
+    Mat src = _src.getMat();
+    // only allow one channel
+    // create and return normalized image
+    Mat dst;
+    cv::normalize(_src, dst, 0, 255, NORM_MINMAX, CV_8UC1);
+    return dst;
+}
+
 // Converts the images given in src into a row matrix.
 Mat asRowMatrix(const vector<Mat>& src, int rtype, double alpha = 1, double beta = 0) {
     // Number of samples:
@@ -68,6 +79,47 @@ Mat asRowMatrix(const vector<Mat>& src, int rtype, double alpha = 1, double beta
     return data;
 }
 
+struct params
+{
+    Mat data;
+    int ch;
+    int rows;
+    PCA pca;
+    string winName;
+};
+
+static void onTrackbar(int pos, void* ptr)
+{
+    cout << "Retained Variance = " << pos << "%   ";
+    cout << "re-calculating PCA..." << std::flush;
+
+    double var = pos / 100.0;
+
+    struct params *p = (struct params *)ptr;
+
+    p->pca = PCA(p->data, cv::Mat(), CV_PCA_DATA_AS_ROW, var);
+
+    Mat point = p->pca.project(p->data.row(0));
+    Mat reconstruction = p->pca.backProject(point);
+    reconstruction = reconstruction.reshape(p->ch, p->rows);
+    reconstruction = toGrayscale(reconstruction);
+
+    imshow(p->winName, reconstruction);
+    cout << "done!   # of principal components: " << p->pca.eigenvectors.rows << endl;
+}
+
+static  Mat formatImagesForPCA(const vector<Mat> &data)
+{
+    Mat dst(static_cast<int>(data.size()), data[0].rows*data[0].cols, CV_8U);
+    for(unsigned int i = 0; i < data.size(); i++)
+    {
+        Mat image_row = data[i].clone().reshape(1,1);
+        Mat row_i = dst.row(i);
+        image_row.convertTo(row_i,CV_8U);
+    }
+    return dst;
+}
+
 int main()
 {
     string prefix = "DataSet/";
@@ -84,20 +136,25 @@ int main()
 #if DEBUG
     //cout << "Dim ( " << mPCA_set.cols << "," << mPCA_set.rows << " )" << endl;
 #endif
-    cout << "Start Load Digit Images Set\n";
-    for (int i=0; i < component_num; i++ )
-    {
-        db.push_back( imread(prefix + to_string(i) + ".jpg") );
+    try {
+            cout << "Start Load Digit Images Set\n";
+             for (int i=0; i < component_num; i++ )
+            {
+                db.push_back( imread(prefix + to_string(i) + ".jpg") );
 #if DEBUG
-        cout << "--> Load " << prefix + to_string(i) ;
+                cout << "--> Load " << prefix + to_string(i) << "\n" ;
 #endif
+            }
+    } catch (cv::Exception& e) {
+        cerr << "Error opening file \"" << "\". Reason: " << e.msg << endl;
+        exit(1);
     }
-
     /* Build a matrix with the observations in row:*/
-    Mat data = asRowMatrix(db, CV_8U);
+//    Mat data = asRowMatrix(db, CV_8U);
+    Mat data = formatImagesForPCA(db);
     cout << "All images save in the data vector.\n";
 
-    PCA pca(data, Mat(), CV_PCA_DATA_AS_ROW, component_num);
+    PCA pca(data, Mat(), CV_PCA_DATA_AS_ROW, component_num );
 
     // And copy the PCA results:
     Mat mean = pca.mean.clone();
@@ -112,8 +169,31 @@ int main()
     imshow("pc2", norm_0_255(pca.eigenvectors.row(1)).reshape(1, db[0].rows));
     imshow("pc3", norm_0_255(pca.eigenvectors.row(2)).reshape(1, db[0].rows));
 
-    // Show the images:
-    waitKey(0);
+    // Demonstration of the effect of retainedVariance on the first image
+    Mat point = pca.project(data.row(0)); // project into the eigenspace, thus the image becomes a "point"
+    Mat reconstruction = pca.backProject(point); // re-create the image from the "point"
+    reconstruction = reconstruction.reshape(db[0].channels(), db[0].rows); // reshape from a row vector into image shape
+    reconstruction = toGrayscale(reconstruction); // re-scale for displaying
 
+    // display until user presses q
+    string winName = "Reconstruction | press 'q' to quit";
+    imshow(winName, reconstruction);
+
+    // params struct to pass to the trackbar handler
+    params p;
+    p.data = data;
+    p.ch = db[0].channels();
+    p.rows = db[0].rows;
+    p.pca = pca;
+    p.winName = winName;
+
+    // create the tracbar
+    int pos = 95;
+    createTrackbar("Retained Variance (%)", winName, &pos, 100, onTrackbar, (void*)&p);
+
+
+    int key = 0;
+    while(key != 'q')
+        key = waitKey();
     return 0;
 }
